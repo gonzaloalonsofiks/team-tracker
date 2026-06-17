@@ -25,14 +25,24 @@ export function buildODataUrl(
     filters.push(`AssignedTo/UserEmail in (${list})`)
   }
 
-  // Build query string manually — URLSearchParams encodes spaces as '+' and parens as '%28'
-  // which breaks OData filter/expand syntax. Azure DevOps accepts literal OData characters.
-  const qs = [
-    `$select=WorkItemId,DateValue,CompletedWork,State,Title,WorkItemType`,
-    `$expand=AssignedTo($select=UserName,UserEmail)`,
-    `$filter=${filters.join(' and ')}`,
-    `$orderby=WorkItemId asc,DateValue asc`,
-  ].join('&')
+  // WorkItemSnapshot requires $apply (aggregation) — raw row queries are rejected with VS403510.
+  // groupby on all identifying columns + aggregate(max) satisfies the requirement while
+  // preserving per-item per-day data so we can compute daily deltas on the client.
+  const groupbyProps = [
+    'WorkItemId',
+    'DateValue',
+    'State',
+    'Title',
+    'WorkItemType',
+    'AssignedTo/UserName',
+    'AssignedTo/UserEmail',
+  ].join(',')
+
+  const apply =
+    `filter(${filters.join(' and ')})` +
+    `/groupby((${groupbyProps}),aggregate(CompletedWork with max as CompletedWork))`
+
+  const qs = [`$apply=${apply}`, `$orderby=WorkItemId asc,DateValue asc`].join('&')
 
   return `/azdo/${org}/${project}/_odata/v4.0-preview/WorkItemSnapshot?${qs}`
 }
