@@ -44,8 +44,19 @@ interface CellClickState {
   cell: MatrixCell
 }
 
-export function TrackerTable({ matrix }: { matrix: TrackerMatrix }) {
+export function TrackerTable({ matrix, showWeekends }: { matrix: TrackerMatrix; showWeekends: boolean }) {
   const [popover, setPopover] = useState<CellClickState | null>(null)
+
+  const visibleDates = useMemo(
+    () =>
+      showWeekends
+        ? matrix.dates
+        : matrix.dates.filter((d) => {
+            const dow = getDay(parseISO(d))
+            return dow !== 0 && dow !== 6
+          }),
+    [matrix.dates, showWeekends],
+  )
 
   const handleCellClick = useCallback(
     (e: React.MouseEvent<HTMLElement>, dev: DeveloperRow, date: string) => {
@@ -79,7 +90,7 @@ export function TrackerTable({ matrix }: { matrix: TrackerMatrix }) {
           )
         },
       }),
-      ...matrix.dates.map((date) =>
+      ...visibleDates.map((date) =>
         columnHelper.accessor((row) => row.cells[date], {
           id: date,
           header: () => {
@@ -115,7 +126,7 @@ export function TrackerTable({ matrix }: { matrix: TrackerMatrix }) {
         }),
       ),
     ],
-    [matrix.dates, handleCellClick],
+    [visibleDates, handleCellClick],
   )
 
   const table = useReactTable({

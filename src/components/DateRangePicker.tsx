@@ -1,4 +1,4 @@
-import { format, startOfWeek } from 'date-fns'
+import { endOfWeek, format, startOfWeek } from 'date-fns'
 import type { DateRange } from '../types'
 
 interface DateRangePickerProps {
@@ -18,11 +18,12 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   }
 
   function thisWeek() {
-    const monday = startOfWeek(new Date(), { weekStartsOn: 1 })
     const today = new Date()
+    const monday = startOfWeek(today, { weekStartsOn: 1 })
+    const sunday = endOfWeek(today, { weekStartsOn: 1 })
     onChange({
       start: format(monday, 'yyyy-MM-dd'),
-      end: format(today, 'yyyy-MM-dd'),
+      end: format(sunday, 'yyyy-MM-dd'),
     })
   }
 

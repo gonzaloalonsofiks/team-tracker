@@ -32,6 +32,7 @@ export default function App() {
   const [settings, setSettings] = useState<AppSettings | null>(loadSettings)
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange)
   const [showSettings, setShowSettings] = useState(!loadSettings())
+  const [showWeekends, setShowWeekends] = useState(true)
   const queryClient = useQueryClient()
 
   const { data, isLoading, isError, error, dataUpdatedAt } = useWorkData(settings, dateRange)
@@ -63,6 +64,16 @@ export default function App() {
               <span className="text-xs text-gray-400">{lastFetched}</span>
             )}
             <button
+              onClick={() => setShowWeekends((v) => !v)}
+              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm ${
+                showWeekends
+                  ? 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                  : 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100'
+              }`}
+            >
+              {showWeekends ? 'Hide weekends' : 'Show weekends'}
+            </button>
+            <button
               onClick={handleRefresh}
               disabled={isLoading}
               className="flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50"
@@ -91,7 +102,7 @@ export default function App() {
         ) : data ? (
           <>
             <Legend />
-            <TrackerTable matrix={data} />
+            <TrackerTable matrix={data} showWeekends={showWeekends} />
           </>
         ) : null}
       </main>
