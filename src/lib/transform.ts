@@ -23,10 +23,15 @@ export function computeDailyDeltas(
   displayStart: string,
   displayEnd: string,
 ): DailyWorkItem[] {
+  const sorted = [...rows].sort((a, b) => {
+    if (a.WorkItemId !== b.WorkItemId) return a.WorkItemId - b.WorkItemId
+    return a.DateValue.localeCompare(b.DateValue)
+  })
+
   const prevMap = new Map<number, number>()
   const result: DailyWorkItem[] = []
 
-  for (const row of rows) {
+  for (const row of sorted) {
     const date = row.DateValue.slice(0, 10)
     const cumulative = row.CompletedWork ?? 0
     const prev = prevMap.get(row.WorkItemId) ?? 0
