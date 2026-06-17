@@ -22,14 +22,14 @@ export function buildODataUrl(
 
   if (teamMembers.length > 0) {
     const list = teamMembers.map((m) => `'${m.replace(/'/g, "''")}'`).join(',')
-    filters.push(`AssignedTo/UniqueName in (${list})`)
+    filters.push(`AssignedTo/UserEmail in (${list})`)
   }
 
   // Build query string manually — URLSearchParams encodes spaces as '+' and parens as '%28'
   // which breaks OData filter/expand syntax. Azure DevOps accepts literal OData characters.
   const qs = [
     `$select=WorkItemId,DateValue,CompletedWork,State,Title,WorkItemType,AreaPath,IterationPath`,
-    `$expand=AssignedTo($select=UserName,UniqueName)`,
+    `$expand=AssignedTo($select=UserName,UserEmail)`,
     `$filter=${filters.join(' and ')}`,
     `$orderby=WorkItemId asc,DateValue asc`,
   ].join('&')

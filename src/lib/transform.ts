@@ -64,7 +64,7 @@ export function buildMatrix(
   for (const row of allRows) {
     const date = row.DateValue.slice(0, 10)
     if (!row.AssignedTo || date < displayStart || date > displayEnd) continue
-    const key = row.AssignedTo.UniqueName
+    const key = row.AssignedTo.UserEmail
     if (!devMap.has(key)) {
       devMap.set(key, { displayName: row.AssignedTo.UserName, cells: {} })
     }
@@ -75,7 +75,7 @@ export function buildMatrix(
   for (const row of allRows) {
     const date = row.DateValue.slice(0, 10)
     if (!row.AssignedTo || date < displayStart || date > displayEnd) continue
-    const key = row.AssignedTo.UniqueName
+    const key = row.AssignedTo.UserEmail
     if (!devHasItemsOnDate.has(key)) devHasItemsOnDate.set(key, new Set())
     devHasItemsOnDate.get(key)!.add(date)
   }
@@ -90,7 +90,7 @@ export function buildMatrix(
     )
     if (!matchingRow?.AssignedTo) continue
 
-    const devKey = matchingRow.AssignedTo.UniqueName
+    const devKey = matchingRow.AssignedTo.UserEmail
     if (!deltaCellMap.has(devKey)) deltaCellMap.set(devKey, new Map())
     const dateMap = deltaCellMap.get(devKey)!
     if (!dateMap.has(delta.date)) dateMap.set(delta.date, { totalHours: 0, items: [] })

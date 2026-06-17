@@ -9,7 +9,7 @@ export interface WorkItemSnapshotRow {
   IterationPath: string
   AssignedTo: {
     UserName: string
-    UniqueName: string
+    UserEmail: string
   } | null
 }
 
