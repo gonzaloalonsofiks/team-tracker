@@ -33,7 +33,7 @@ export function computeDailyDeltas(
     const delta = Math.max(0, cumulative - prev)
     prevMap.set(row.WorkItemId, cumulative)
 
-    if (date >= displayStart && date <= displayEnd && delta > 0 && row.AssignedTo) {
+    if (date >= displayStart && date <= displayEnd && delta > 0 && row.AssignedTo?.UserEmail) {
       result.push({
         workItemId: row.WorkItemId,
         date,
@@ -61,10 +61,10 @@ export function buildMatrix(
 
   for (const row of allRows) {
     const date = row.DateValue.slice(0, 10)
-    if (!row.AssignedTo || date < displayStart || date > displayEnd) continue
+    if (!row.AssignedTo?.UserEmail || date < displayStart || date > displayEnd) continue
     const key = row.AssignedTo.UserEmail
     if (!devMap.has(key)) {
-      devMap.set(key, { displayName: row.AssignedTo.UserName, cells: {} })
+      devMap.set(key, { displayName: row.AssignedTo.UserName ?? key, cells: {} })
     }
   }
 
@@ -72,7 +72,7 @@ export function buildMatrix(
   const devHasItemsOnDate = new Map<string, Set<string>>()
   for (const row of allRows) {
     const date = row.DateValue.slice(0, 10)
-    if (!row.AssignedTo || date < displayStart || date > displayEnd) continue
+    if (!row.AssignedTo?.UserEmail || date < displayStart || date > displayEnd) continue
     const key = row.AssignedTo.UserEmail
     if (!devHasItemsOnDate.has(key)) devHasItemsOnDate.set(key, new Set())
     devHasItemsOnDate.get(key)!.add(date)
@@ -128,7 +128,7 @@ export function buildMatrix(
     developers.push({ displayName: dev.displayName, uniqueName, cells })
   }
 
-  developers.sort((a, b) => a.displayName.localeCompare(b.displayName))
+  developers.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''))
 
   return { developers, dates: displayDates }
 }
