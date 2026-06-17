@@ -25,15 +25,16 @@ export function buildODataUrl(
     filters.push(`AssignedTo/UniqueName in (${list})`)
   }
 
-  const params = new URLSearchParams({
-    $select:
-      'WorkItemId,DateValue,CompletedWork,State,Title,WorkItemType,AreaPath,IterationPath',
-    '$expand': 'AssignedTo($select=UserName,UniqueName)',
-    $filter: filters.join(' and '),
-    $orderby: 'WorkItemId asc,DateValue asc',
-  })
+  // Build query string manually — URLSearchParams encodes spaces as '+' and parens as '%28'
+  // which breaks OData filter/expand syntax. Azure DevOps accepts literal OData characters.
+  const qs = [
+    `$select=WorkItemId,DateValue,CompletedWork,State,Title,WorkItemType,AreaPath,IterationPath`,
+    `$expand=AssignedTo($select=UserName,UniqueName)`,
+    `$filter=${filters.join(' and ')}`,
+    `$orderby=WorkItemId asc,DateValue asc`,
+  ].join('&')
 
-  return `/azdo/${org}/${project}/_odata/v4.0-preview/WorkItemSnapshot?${params.toString()}`
+  return `/azdo/${org}/${project}/_odata/v4.0-preview/WorkItemSnapshot?${qs}`
 }
 
 function authHeader(pat: string): string {
@@ -57,7 +58,8 @@ export async function fetchAllPages(
       throw new Error('PAT expired or unauthorized. Please update your settings.')
     }
     if (!res.ok) {
-      throw new Error(`OData request failed: ${res.status} ${res.statusText}`)
+      const body = await res.text().catch(() => '')
+      throw new Error(`OData ${res.status}: ${body || res.statusText}`)
     }
 
     const data: ODataResponse<WorkItemSnapshotRow> = await res.json()
