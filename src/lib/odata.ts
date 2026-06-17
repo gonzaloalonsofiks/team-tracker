@@ -17,7 +17,7 @@ export function buildODataUrl(
 
   if (areaPath) {
     const escaped = areaPath.replace(/'/g, "''")
-    filters.push(`(AreaPath eq '${escaped}' or startswith(AreaPath,'${escaped}\\'))`)
+    filters.push(`(Area/AreaPath eq '${escaped}' or startswith(Area/AreaPath,'${escaped}\\'))`)
   }
 
   if (teamMembers.length > 0) {
@@ -28,7 +28,7 @@ export function buildODataUrl(
   // Build query string manually — URLSearchParams encodes spaces as '+' and parens as '%28'
   // which breaks OData filter/expand syntax. Azure DevOps accepts literal OData characters.
   const qs = [
-    `$select=WorkItemId,DateValue,CompletedWork,State,Title,WorkItemType,AreaPath,IterationPath`,
+    `$select=WorkItemId,DateValue,CompletedWork,State,Title,WorkItemType`,
     `$expand=AssignedTo($select=UserName,UserEmail)`,
     `$filter=${filters.join(' and ')}`,
     `$orderby=WorkItemId asc,DateValue asc`,

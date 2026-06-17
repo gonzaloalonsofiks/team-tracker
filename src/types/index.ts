@@ -5,8 +5,6 @@ export interface WorkItemSnapshotRow {
   State: string
   Title: string
   WorkItemType: string
-  AreaPath: string
-  IterationPath: string
   AssignedTo: {
     UserName: string
     UserEmail: string
@@ -26,8 +24,6 @@ export interface DailyWorkItem {
   title: string
   state: string
   workItemType: string
-  iterationPath: string
-  areaPath: string
 }
 
 export type CellType = 'weekend' | 'has-work' | 'no-items' | 'missing-work'

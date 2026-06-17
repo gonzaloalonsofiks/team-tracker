@@ -41,8 +41,6 @@ export function computeDailyDeltas(
         title: row.Title,
         state: row.State,
         workItemType: row.WorkItemType,
-        iterationPath: row.IterationPath,
-        areaPath: row.AreaPath,
       })
     }
   }
