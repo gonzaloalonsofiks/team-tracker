@@ -11,7 +11,7 @@ export function buildODataUrl(
   const filters: string[] = [
     `DateValue ge ${fetchStart}T00:00:00Z`,
     `DateValue le ${dateEnd}T00:00:00Z`,
-    `WorkItemType ne 'Epic'`,
+    `WorkItemType in ('Task','Bug')`,
     `State ne 'Removed'`,
   ]
 
