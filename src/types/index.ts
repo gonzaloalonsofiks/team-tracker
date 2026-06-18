@@ -57,3 +57,10 @@ export interface DateRange {
   start: string
   end: string
 }
+
+export interface Iteration {
+  IterationName: string
+  IterationPath: string
+  StartDate: string
+  EndDate: string
+}

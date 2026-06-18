@@ -67,7 +67,7 @@ export default function App() {
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="mr-2 text-base font-semibold text-gray-900">Team Tracker</h1>
 
-          <DateRangePicker value={dateRange} onChange={setDateRange} />
+          <DateRangePicker value={dateRange} settings={settings} onChange={setDateRange} />
 
           <div className="ml-auto flex items-center gap-2">
             {lastFetched && (
