@@ -8,7 +8,7 @@ import type {
 } from '../types'
 
 export function getFetchStart(displayStart: string): string {
-  return format(subDays(parseISO(displayStart), 1), 'yyyy-MM-dd')
+  return format(subDays(parseISO(displayStart), 3), 'yyyy-MM-dd')
 }
 
 export function generateDisplayDates(start: string, end: string): string[] {
