@@ -5,6 +5,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { format, getDay, parseISO } from 'date-fns'
+import { Pencil } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { DeveloperRow, MatrixCell, TrackerMatrix } from '../types'
 import { WorkItemsPopover } from './WorkItemsPopover'
@@ -50,16 +51,26 @@ interface CellClickState {
   cell: MatrixCell
 }
 
+interface Dedication {
+  get: (email: string) => number | undefined
+  set: (email: string, hours: number) => void
+  remove: (email: string) => void
+}
+
 export function TrackerTable({
   matrix,
   showWeekends,
   onDevClick,
+  dedication,
 }: {
   matrix: TrackerMatrix
   showWeekends: boolean
   onDevClick?: (uniqueName: string) => void
+  dedication: Dedication
 }) {
   const [popover, setPopover] = useState<CellClickState | null>(null)
+  const [editingDev, setEditingDev] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
 
   const visibleDates = useMemo(
     () =>
@@ -80,6 +91,16 @@ export function TrackerTable({
     },
     [],
   )
+
+  function commitEdit(email: string) {
+    const hours = parseFloat(editValue)
+    if (!isNaN(hours) && hours > 0) {
+      dedication.set(email, hours)
+    } else if (editValue === '' || editValue === '0') {
+      dedication.remove(email)
+    }
+    setEditingDev(null)
+  }
 
   const columns = useMemo(
     () => [
@@ -143,8 +164,76 @@ export function TrackerTable({
           },
         }),
       ),
+      columnHelper.display({
+        id: 'total',
+        header: () => (
+          <div className="text-center text-xs font-medium text-gray-600">
+            <div>Total</div>
+            <div className="font-normal text-gray-400">/ Cap</div>
+          </div>
+        ),
+        cell: (info) => {
+          const dev = info.row.original
+          const total = matrix.dates.reduce((sum, d) => sum + (dev.cells[d]?.totalHours ?? 0), 0)
+          const cap = dedication.get(dev.uniqueName)
+          const isEditing = editingDev === dev.uniqueName
+
+          if (isEditing) {
+            return (
+              <div className="flex items-center justify-center px-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={() => commitEdit(dev.uniqueName)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitEdit(dev.uniqueName)
+                    if (e.key === 'Escape') setEditingDev(null)
+                  }}
+                  className="w-16 rounded border border-blue-400 px-1 py-0.5 text-center text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            )
+          }
+
+          const pct = cap ? total / cap : null
+          const capColor =
+            pct === null
+              ? ''
+              : pct > 1
+                ? 'text-red-600'
+                : pct >= 0.8
+                  ? 'text-yellow-600'
+                  : 'text-green-700'
+
+          return (
+            <div className="group flex flex-col items-center justify-center gap-0.5 px-2 py-1">
+              <span className="text-sm font-medium text-gray-800">
+                {total > 0 ? formatHours(total) : '—'}
+              </span>
+              <button
+                onClick={() => {
+                  setEditValue(cap !== undefined ? String(cap) : '')
+                  setEditingDev(dev.uniqueName)
+                }}
+                className={`flex items-center gap-0.5 text-xs ${cap !== undefined ? capColor : 'text-gray-300 opacity-0 group-hover:opacity-100'}`}
+                title="Set dedication hours"
+              >
+                {cap !== undefined ? (
+                  <span>/ {formatHours(cap)}</span>
+                ) : (
+                  <Pencil size={10} />
+                )}
+              </button>
+            </div>
+          )
+        },
+      }),
     ],
-    [visibleDates, handleCellClick],
+    [visibleDates, handleCellClick, dedication, editingDev, editValue, matrix.dates],
   )
 
   const table = useReactTable({
@@ -166,7 +255,9 @@ export function TrackerTable({
                     className={`border-r border-gray-200 px-3 py-2 text-left last:border-r-0 ${
                       i === 0
                         ? 'sticky left-0 z-20 min-w-[180px] bg-gray-50'
-                        : 'min-w-[72px] bg-gray-50'
+                        : header.column.id === 'total'
+                          ? 'sticky right-0 z-20 min-w-[80px] bg-gray-50 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]'
+                          : 'min-w-[72px] bg-gray-50'
                     }`}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
@@ -184,12 +275,12 @@ export function TrackerTable({
                     className={`border-r border-gray-100 p-0 last:border-r-0 ${
                       i === 0
                         ? 'sticky left-0 z-10 bg-white px-3 py-2.5'
-                        : ''
+                        : cell.column.id === 'total'
+                          ? 'sticky right-0 z-10 bg-white shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]'
+                          : ''
                     }`}
                   >
-                    {i === 0
-                      ? flexRender(cell.column.columnDef.cell, cell.getContext())
-                      : flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
               </tr>

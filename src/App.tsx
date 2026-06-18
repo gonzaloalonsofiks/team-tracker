@@ -7,6 +7,7 @@ import { DevDetail } from './components/DevDetail'
 import { DevFilter } from './components/DevFilter'
 import { SettingsModal } from './components/SettingsModal'
 import { TrackerTable } from './components/TrackerTable'
+import { useDedication } from './hooks/useDedication'
 import { useWorkData } from './hooks/useWorkData'
 import { generateDisplayDates } from './lib/transform'
 import type { AppSettings, DateRange } from './types'
@@ -39,6 +40,7 @@ export default function App() {
   const [selectedDevs, setSelectedDevs] = useState<string[]>([])
   const [detailDev, setDetailDev] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  const dedication = useDedication(dateRange)
 
   const { data, isLoading, isError, error, dataUpdatedAt } = useWorkData(settings, dateRange)
 
@@ -138,6 +140,7 @@ export default function App() {
                   matrix={filteredData}
                   showWeekends={showWeekends}
                   onDevClick={setDetailDev}
+                  dedication={dedication}
                 />
               </>
             )}
