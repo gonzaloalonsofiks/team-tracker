@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { format, startOfWeek } from 'date-fns'
 import { RefreshCw, Settings } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { DateRangePicker } from './components/DateRangePicker'
+import { DevFilter } from './components/DevFilter'
 import { SettingsModal } from './components/SettingsModal'
 import { TrackerTable } from './components/TrackerTable'
 import { useWorkData } from './hooks/useWorkData'
@@ -33,9 +34,15 @@ export default function App() {
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange)
   const [showSettings, setShowSettings] = useState(!loadSettings())
   const [showWeekends, setShowWeekends] = useState(true)
+  const [selectedDevs, setSelectedDevs] = useState<string[]>([])
   const queryClient = useQueryClient()
 
   const { data, isLoading, isError, error, dataUpdatedAt } = useWorkData(settings, dateRange)
+
+  const filteredData = useMemo(() => {
+    if (!data || selectedDevs.length === 0) return data
+    return { ...data, developers: data.developers.filter((d) => selectedDevs.includes(d.uniqueName)) }
+  }, [data, selectedDevs])
 
   function handleSave(next: AppSettings) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(next))
@@ -62,6 +69,13 @@ export default function App() {
           <div className="ml-auto flex items-center gap-2">
             {lastFetched && (
               <span className="text-xs text-gray-400">{lastFetched}</span>
+            )}
+            {data && data.developers.length > 0 && (
+              <DevFilter
+                developers={data.developers}
+                selected={selectedDevs}
+                onChange={setSelectedDevs}
+              />
             )}
             <button
               onClick={() => setShowWeekends((v) => !v)}
@@ -99,10 +113,10 @@ export default function App() {
           <LoadingSpinner />
         ) : isError ? (
           <ErrorBanner message={error?.message ?? 'Unknown error'} />
-        ) : data ? (
+        ) : filteredData ? (
           <>
             <Legend />
-            <TrackerTable matrix={data} showWeekends={showWeekends} />
+            <TrackerTable matrix={filteredData} showWeekends={showWeekends} />
           </>
         ) : null}
       </main>
