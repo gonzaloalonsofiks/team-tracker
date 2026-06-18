@@ -16,13 +16,19 @@ function formatHours(h: number): string {
   return h % 1 === 0 ? `${h}h` : `${h.toFixed(1)}h`
 }
 
+function hasWorkClasses(hours: number): string {
+  if (hours <= 3) return 'bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer'
+  if (hours < 6) return 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 cursor-pointer'
+  return 'bg-green-50 text-green-800 hover:bg-green-100 cursor-pointer'
+}
+
 function cellClasses(cell: MatrixCell | undefined): string {
   if (!cell) return 'bg-gray-50'
   switch (cell.cellType) {
     case 'weekend':
       return 'bg-gray-100 text-gray-300'
     case 'has-work':
-      return 'bg-green-50 text-green-800 hover:bg-green-100 cursor-pointer'
+      return hasWorkClasses(cell.totalHours)
     case 'missing-work':
       return 'bg-red-100 text-red-700 font-semibold hover:bg-red-200 cursor-pointer'
     case 'no-items':
@@ -44,7 +50,15 @@ interface CellClickState {
   cell: MatrixCell
 }
 
-export function TrackerTable({ matrix, showWeekends }: { matrix: TrackerMatrix; showWeekends: boolean }) {
+export function TrackerTable({
+  matrix,
+  showWeekends,
+  onDevClick,
+}: {
+  matrix: TrackerMatrix
+  showWeekends: boolean
+  onDevClick?: (uniqueName: string) => void
+}) {
   const [popover, setPopover] = useState<CellClickState | null>(null)
 
   const visibleDates = useMemo(
@@ -74,6 +88,7 @@ export function TrackerTable({ matrix, showWeekends }: { matrix: TrackerMatrix; 
         header: 'Developer',
         cell: (info) => {
           const name = info.getValue()
+          const uniqueName = info.row.original.uniqueName
           const initials = name
             .split(' ')
             .slice(0, 2)
@@ -81,12 +96,15 @@ export function TrackerTable({ matrix, showWeekends }: { matrix: TrackerMatrix; 
             .join('')
             .toUpperCase()
           return (
-            <div className="flex items-center gap-2">
+            <button
+              onClick={() => onDevClick?.(uniqueName)}
+              className="flex items-center gap-2 text-left hover:opacity-80"
+            >
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
                 {initials}
               </span>
-              <span className="font-medium text-gray-800">{name}</span>
-            </div>
+              <span className="font-medium text-gray-800 underline-offset-2 hover:underline">{name}</span>
+            </button>
           )
         },
       }),

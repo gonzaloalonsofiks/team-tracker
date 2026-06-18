@@ -3,10 +3,12 @@ import { format, startOfWeek } from 'date-fns'
 import { RefreshCw, Settings } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { DateRangePicker } from './components/DateRangePicker'
+import { DevDetail } from './components/DevDetail'
 import { DevFilter } from './components/DevFilter'
 import { SettingsModal } from './components/SettingsModal'
 import { TrackerTable } from './components/TrackerTable'
 import { useWorkData } from './hooks/useWorkData'
+import { generateDisplayDates } from './lib/transform'
 import type { AppSettings, DateRange } from './types'
 
 const SETTINGS_KEY = 'team-tracker-settings'
@@ -35,6 +37,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(!loadSettings())
   const [showWeekends, setShowWeekends] = useState(true)
   const [selectedDevs, setSelectedDevs] = useState<string[]>([])
+  const [detailDev, setDetailDev] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const { data, isLoading, isError, error, dataUpdatedAt } = useWorkData(settings, dateRange)
@@ -115,8 +118,29 @@ export default function App() {
           <ErrorBanner message={error?.message ?? 'Unknown error'} />
         ) : filteredData ? (
           <>
-            <Legend />
-            <TrackerTable matrix={filteredData} showWeekends={showWeekends} />
+            {detailDev ? (
+              (() => {
+                const dev = filteredData.developers.find((d) => d.uniqueName === detailDev)
+                const displayDates = generateDisplayDates(dateRange.start, dateRange.end)
+                return dev && settings ? (
+                  <DevDetail
+                    dev={dev}
+                    displayDates={displayDates}
+                    settings={settings}
+                    onBack={() => setDetailDev(null)}
+                  />
+                ) : null
+              })()
+            ) : (
+              <>
+                <Legend />
+                <TrackerTable
+                  matrix={filteredData}
+                  showWeekends={showWeekends}
+                  onDevClick={setDetailDev}
+                />
+              </>
+            )}
           </>
         ) : null}
       </main>
