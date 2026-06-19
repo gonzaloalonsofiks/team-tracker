@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-table'
 import { format, getDay, parseISO } from 'date-fns'
 import { Pencil } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { DeveloperRow, MatrixCell, TrackerMatrix } from '../types'
 import { WorkItemsPopover } from './WorkItemsPopover'
 
