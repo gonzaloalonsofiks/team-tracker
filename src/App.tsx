@@ -1,27 +1,24 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { format, startOfWeek } from 'date-fns'
-import { RefreshCw, Settings } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { DateRangePicker } from './components/DateRangePicker'
 import { DevDetail } from './components/DevDetail'
 import { DevFilter } from './components/DevFilter'
-import { SettingsModal } from './components/SettingsModal'
 import { TrackerTable } from './components/TrackerTable'
 import { useDedication } from './hooks/useDedication'
 import { useWorkData } from './hooks/useWorkData'
 import { generateDisplayDates } from './lib/transform'
 import type { AppSettings, DateRange } from './types'
 
-const SETTINGS_KEY = 'team-tracker-settings'
-
-function loadSettings(): AppSettings | null {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY)
-    return raw ? (JSON.parse(raw) as AppSettings) : null
-  } catch {
-    return null
-  }
+const settings: AppSettings = {
+  org: import.meta.env.VITE_ADO_ORG ?? '',
+  project: import.meta.env.VITE_ADO_PROJECT ?? '',
+  areaPath: import.meta.env.VITE_ADO_AREA_PATH ?? '',
+  teamMembers: import.meta.env.VITE_ADO_TEAM_MEMBERS ?? '',
 }
+
+const isConfigured = Boolean(settings.org && settings.project)
 
 function getDefaultDateRange(): DateRange {
   const today = new Date()
@@ -33,27 +30,22 @@ function getDefaultDateRange(): DateRange {
 }
 
 export default function App() {
-  const [settings, setSettings] = useState<AppSettings | null>(loadSettings)
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange)
-  const [showSettings, setShowSettings] = useState(!loadSettings())
   const [showWeekends, setShowWeekends] = useState(true)
   const [selectedDevs, setSelectedDevs] = useState<string[]>([])
   const [detailDev, setDetailDev] = useState<string | null>(null)
   const queryClient = useQueryClient()
   const dedication = useDedication(dateRange)
 
-  const { data, isLoading, isError, error, dataUpdatedAt } = useWorkData(settings, dateRange)
+  const { data, isLoading, isError, error, dataUpdatedAt } = useWorkData(
+    isConfigured ? settings : null,
+    dateRange,
+  )
 
   const filteredData = useMemo(() => {
     if (!data || selectedDevs.length === 0) return data
     return { ...data, developers: data.developers.filter((d) => selectedDevs.includes(d.uniqueName)) }
   }, [data, selectedDevs])
-
-  function handleSave(next: AppSettings) {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next))
-    setSettings(next)
-    setShowSettings(false)
-  }
 
   function handleRefresh() {
     void queryClient.invalidateQueries({ queryKey: ['work-data'] })
@@ -69,7 +61,7 @@ export default function App() {
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="mr-2 text-base font-semibold text-gray-900">Team Tracker</h1>
 
-          <DateRangePicker value={dateRange} settings={settings} onChange={setDateRange} />
+          <DateRangePicker value={dateRange} settings={isConfigured ? settings : null} onChange={setDateRange} />
 
           <div className="ml-auto flex items-center gap-2">
             {lastFetched && (
@@ -100,20 +92,13 @@ export default function App() {
               <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
               Refresh
             </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              className="flex items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-700"
-            >
-              <Settings size={14} />
-              Settings
-            </button>
           </div>
         </div>
       </header>
 
       <main className="p-6">
-        {!settings ? (
-          <EmptyState onOpenSettings={() => setShowSettings(true)} />
+        {!isConfigured ? (
+          <MisconfiguredState />
         ) : isLoading ? (
           <LoadingSpinner />
         ) : isError ? (
@@ -124,7 +109,7 @@ export default function App() {
               (() => {
                 const dev = filteredData.developers.find((d) => d.uniqueName === detailDev)
                 const displayDates = generateDisplayDates(dateRange.start, dateRange.end)
-                return dev && settings ? (
+                return dev ? (
                   <DevDetail
                     dev={dev}
                     displayDates={displayDates}
@@ -147,31 +132,18 @@ export default function App() {
           </>
         ) : null}
       </main>
-
-      <SettingsModal
-        open={showSettings}
-        initialValues={settings}
-        onClose={() => setShowSettings(false)}
-        onSave={handleSave}
-      />
     </div>
   )
 }
 
-function EmptyState({ onOpenSettings }: { onOpenSettings: () => void }) {
+function MisconfiguredState() {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="mb-4 text-4xl">📊</div>
-      <h2 className="mb-1 text-lg font-semibold text-gray-800">No connection configured</h2>
-      <p className="mb-6 text-sm text-gray-500">
-        Connect your Azure DevOps organization to start tracking team capacity.
+      <h2 className="mb-1 text-lg font-semibold text-gray-800">Missing configuration</h2>
+      <p className="mb-2 text-sm text-gray-500">
+        Set <code className="rounded bg-gray-100 px-1">VITE_ADO_ORG</code> and{' '}
+        <code className="rounded bg-gray-100 px-1">VITE_ADO_PROJECT</code> environment variables and redeploy.
       </p>
-      <button
-        onClick={onOpenSettings}
-        className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
-      >
-        Configure connection
-      </button>
     </div>
   )
 }
@@ -185,15 +157,15 @@ function LoadingSpinner() {
 }
 
 function ErrorBanner({ message }: { message: string }) {
-  const isPat = message.toLowerCase().includes('pat') || message.includes('401')
+  const isAuth = message.includes('401') || message.toLowerCase().includes('unauthorized')
   return (
     <div className="rounded-lg border border-red-200 bg-red-50 px-5 py-4">
       <p className="font-medium text-red-800">Failed to load data</p>
       <p className="mt-1 text-sm text-red-600">{message}</p>
-      {isPat && (
+      {isAuth && (
         <p className="mt-2 text-sm text-red-500">
-          Open Settings and verify your PAT has the <strong>Analytics (Read)</strong> scope and
-          has not expired.
+          Verify the <code className="rounded bg-red-100 px-1">ADO_PAT</code> secret has the{' '}
+          <strong>Analytics (Read)</strong> scope and has not expired.
         </p>
       )}
     </div>

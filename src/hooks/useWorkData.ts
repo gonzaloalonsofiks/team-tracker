@@ -14,7 +14,6 @@ export function useWorkData(settings: AppSettings | null, dateRange: DateRange) 
       'work-data',
       settings?.org,
       settings?.project,
-      settings?.pat,
       settings?.areaPath,
       settings?.teamMembers,
       dateRange.start,
@@ -29,7 +28,7 @@ export function useWorkData(settings: AppSettings | null, dateRange: DateRange) 
       const deltas = computeDailyDeltas(rows, dateRange.start, dateRange.end)
       return buildMatrix(deltas, rows, displayDates)
     },
-    enabled: Boolean(settings?.pat && settings?.org && settings?.project),
+    enabled: Boolean(settings?.org && settings?.project),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   })

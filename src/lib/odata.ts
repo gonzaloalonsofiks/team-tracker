@@ -47,22 +47,13 @@ export function buildODataUrl(
   return `/azdo/${org}/${project}/_odata/v4.0-preview/WorkItemSnapshot?${qs}`
 }
 
-function authHeader(pat: string): string {
-  return `Basic ${btoa(`:${pat}`)}`
-}
-
-export async function fetchAllPages(
-  initialUrl: string,
-  pat: string,
-): Promise<WorkItemSnapshotRow[]> {
+export async function fetchAllPages(initialUrl: string): Promise<WorkItemSnapshotRow[]> {
   const rows: WorkItemSnapshotRow[] = []
   let next: string | undefined = initialUrl
 
   while (next) {
     const proxied = next.replace('https://analytics.dev.azure.com', '/azdo')
-    const res = await fetch(proxied, {
-      headers: { Authorization: authHeader(pat) },
-    })
+    const res = await fetch(proxied)
 
     if (res.status === 401) {
       throw new Error('PAT expired or unauthorized. Please update your settings.')
@@ -101,5 +92,5 @@ export async function fetchWorkItemSnapshots(
     members,
   )
 
-  return fetchAllPages(url, settings.pat)
+  return fetchAllPages(url)
 }

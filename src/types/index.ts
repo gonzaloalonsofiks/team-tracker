@@ -48,7 +48,6 @@ export interface TrackerMatrix {
 export interface AppSettings {
   org: string
   project: string
-  pat: string
   areaPath: string
   teamMembers: string
 }

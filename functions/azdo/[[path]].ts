@@ -1,15 +1,23 @@
+interface Env {
+  ADO_PAT?: string
+}
+
 export async function onRequest(
-  context: EventContext<Record<string, unknown>, 'path', Record<string, string | string[]>>,
+  context: EventContext<Env, 'path', Record<string, string | string[]>>,
 ): Promise<Response> {
-  const { params, request } = context
+  const { params, request, env } = context
   const pathSegments = Array.isArray(params.path) ? params.path : [params.path]
   const url = new URL(request.url)
   const target = `https://analytics.dev.azure.com/${pathSegments.join('/')}${url.search}`
 
+  const authorization = env.ADO_PAT
+    ? `Basic ${btoa(`:${env.ADO_PAT}`)}`
+    : (request.headers.get('Authorization') ?? '')
+
   const upstream = await fetch(target, {
     method: request.method,
     headers: {
-      Authorization: request.headers.get('Authorization') ?? '',
+      Authorization: authorization,
       Accept: request.headers.get('Accept') ?? 'application/json',
     },
   })

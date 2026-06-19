@@ -1,10 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { AppSettings, Iteration, ODataResponse } from '../types'
 
-function authHeader(pat: string): string {
-  return `Basic ${btoa(`:${pat}`)}`
-}
-
 async function fetchIterations(settings: AppSettings): Promise<Iteration[]> {
   const filters = [`StartDate ne null`, `EndDate ne null`]
 
@@ -22,7 +18,7 @@ async function fetchIterations(settings: AppSettings): Promise<Iteration[]> {
 
   const url = `/azdo/${settings.org}/${encodeURIComponent(settings.project)}/_odata/v4.0-preview/Iterations?${qs}`
 
-  const res = await fetch(url, { headers: { Authorization: authHeader(settings.pat) } })
+  const res = await fetch(url)
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     throw new Error(`Iterations ${res.status}: ${body || res.statusText}`)
@@ -34,9 +30,9 @@ async function fetchIterations(settings: AppSettings): Promise<Iteration[]> {
 
 export function useIterations(settings: AppSettings | null) {
   return useQuery<Iteration[], Error>({
-    queryKey: ['iterations', settings?.org, settings?.project, settings?.pat],
+    queryKey: ['iterations', settings?.org, settings?.project],
     queryFn: () => fetchIterations(settings!),
-    enabled: Boolean(settings?.pat && settings?.org && settings?.project),
+    enabled: Boolean(settings?.org && settings?.project),
     staleTime: 10 * 60 * 1000,
     retry: 1,
   })
